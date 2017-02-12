@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 from django.db import models
-from django.db.models import Q, Count
+from django.db.models import Count, Sum
 
 
 class Party(models.Model):
@@ -34,6 +34,12 @@ DEM_AFFILIATED_PARTIES = [
     'D/WF/IDP Combined Parties',
     'D/IND',
     'WF'
+]
+
+GOP_AFFILIATED_PARTIES = [
+    'R',
+    'R*',
+    'GOP'
 ]
 
 
@@ -78,12 +84,15 @@ class ElectionCandidate(models.Model):
     #     return string
 
     @classmethod
-    def dem_winners_by_office(cls, office):
+    def winners_by_office_party_year(cls, office, party, year=2012):
+        affiliated_parties = DEM_AFFILIATED_PARTIES
+        if party == 'gop':
+            affiliated_parties = GOP_AFFILIATED_PARTIES
 
         senate_winners = ElectionCandidate.objects.filter(
             election__office=office, winner=True)
         senate_winners = senate_winners.filter(
-            party__name__in=DEM_AFFILIATED_PARTIES)
+            party__name__in=affiliated_parties)
 
         # Because the FEC marks some elections as having more than 1 winner
         # if the candidate is affilaited with more than 1 party, we have
@@ -100,3 +109,7 @@ class ElectionCandidate(models.Model):
             fec_id__in=dups, party__major=False)
 
         return senate_winners
+
+    @classmethod
+    def winners_votes(cls, winners):
+        return winners.aggregate(Sum('votes'))
