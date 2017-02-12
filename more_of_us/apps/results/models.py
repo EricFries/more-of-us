@@ -33,18 +33,17 @@ class Election(models.Model):
     runoff = models.BooleanField(default=False)
 
     def __str__(self):
-        return '%s %s %s - %s' % (self.state, self.office, self.district, self.year)
+        return '%s %s %s - %s' % (
+            self.state, self.office, self.district, self.year)
 
     @property
     def winner(self):
-        try:
-            return self.electioncandidate_set.get(winner=True)
-        except ElectionCandidate.MultipleObjectsReturned:
+        # try:
+        return self.electioncandidate_set.get(winner=True)
+        # except ElectionCandidate.MultipleObjectsReturned:
+            # import ipdb; ipdb.set_trace()
             # Do to same candidate listed w/ multiple parties (e.g., WF & D)
-            return self.electioncandidate_set.filter(winner=True).first()
-        except ElectionCandidate.DoesNotExist:
-            import ipdb; ipdb.set_trace()
-            return
+            # return self.electioncandidate_set.filter(winner=True).first()
 
 
 class ElectionCandidate(models.Model):

@@ -16,8 +16,7 @@ file_path = os.path.join(module_dir, 'congress_results_2012.csv')
 
 
 def is_a_general_candidate_row(fec_id):
-    return fec_id not in ['n/a', '', 'FEC ID#'] \
-
+    return fec_id not in ['n/a', '', 'FEC ID#']
 
 
 def has_runoff_votes(runoff_votes):
@@ -26,13 +25,35 @@ def has_runoff_votes(runoff_votes):
     return False
 
 
-def is_combined_party_election_candidate(party_name):
-    return 'combined' in party_name.lower()
+def is_combined_party_election_candidate(combined_party_votes):
+    if combined_party_votes:
+        return True
+    return False
 
 
 def format_vote_total(string_votes):
     string_votes = votes.replace(',', '')
     return int(string_votes)
+
+
+
+# Maybe instead mark them as they are in the CSV, but perform
+# a cleanup and change the winner to the party they caucus with.
+
+def candidate_is_winner(election, outcome, fec_id):
+    # Return false if the candidate is already marked as the winner.
+    # This is due to CT entires where the same candidate running under
+    # different parties is marked as the winner twice (e.g. D and WF).
+    marked_as_winner = 'w' in outcome.lower()
+    try:
+        preexisting_winner = election.winner
+        if marked_as_winner:
+            print election.state
+            print election.district
+            print 'not marking as winner'
+        return False
+    except ElectionCandidate.DoesNotExist:
+        return marked_as_winner
 
 
 def is_special_election(district_description):
@@ -56,10 +77,10 @@ with open(file_path, 'rb') as csvfile:
 
         runoff_votes = row[12]
         party_name = row[9]
+        combined_party_votes = row[14]
         if has_runoff_votes(runoff_votes):
             votes = runoff_votes
-        elif is_combined_party_election_candidate(party_name):
-            combined_party_votes = row[14]
+        elif is_combined_party_election_candidate(combined_party_votes):
             votes = combined_party_votes
         else:
             general_votes = row[10]
@@ -85,7 +106,7 @@ with open(file_path, 'rb') as csvfile:
         office = 'sen'
         if district_description is not 'S':
             office = 'rep'
-        candidate_is_winner = 'W' in row[16]
+
         election, created = Election.objects.get_or_create(
             year=2012,
             district=district_description,
@@ -104,13 +125,16 @@ with open(file_path, 'rb') as csvfile:
 
         incumbent = row[4] == '(I)'
 
+        outcome = row[16]
+        mark_as_winner = candidate_is_winner(election, outcome, fec_id)
+
         election_candidate = ElectionCandidate(
             candidate=candidate,
             election=election,
             party=party,
             incumbent=incumbent,
             votes=int(votes),
-            winner=candidate_is_winner,
+            winner=mark_as_winner,
             fec_id=fec_id,
             combined_parties=is_combined_party_election_candidate(party_name)
             )
