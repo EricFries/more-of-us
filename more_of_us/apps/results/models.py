@@ -18,7 +18,6 @@ class Candidate(models.Model):
     #     return '%s %s' % (self.first_name, self.last_name)
 
 
-
 OFFICES = (
     ('sen', 'SENATOR'),
     ('rep', 'CONGRESSMAN'),
@@ -31,9 +30,21 @@ class Election(models.Model):
     office = models.CharField(choices=OFFICES, max_length=30)
     district = models.CharField(max_length=30, blank=True)
     state = models.CharField(max_length=30, blank=True)
+    runoff = models.BooleanField(default=False)
 
     def __str__(self):
-        return '%s %s - %s' % (self.state, self.office, self.year)
+        return '%s %s %s - %s' % (self.state, self.office, self.district, self.year)
+
+    @property
+    def winner(self):
+        try:
+            return self.electioncandidate_set.get(winner=True)
+        except ElectionCandidate.MultipleObjectsReturned:
+            # Do to same candidate listed w/ multiple parties (e.g., WF & D)
+            return self.electioncandidate_set.filter(winner=True).first()
+        except ElectionCandidate.DoesNotExist:
+            import ipdb; ipdb.set_trace()
+            return
 
 
 class ElectionCandidate(models.Model):
@@ -41,9 +52,10 @@ class ElectionCandidate(models.Model):
     election = models.ForeignKey(Election)
     party = models.ForeignKey(Party)
     incumbent = models.BooleanField()
-    general_votes = models.IntegerField()
+    votes = models.IntegerField()
     winner = models.BooleanField()
     fec_id = models.CharField(max_length=30, blank=True)
+    combined_parties = models.BooleanField(default=False)
 
     # def __str__(self):
     #     string = '%s %s' % (
