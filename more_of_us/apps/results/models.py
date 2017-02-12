@@ -33,7 +33,8 @@ DEM_AFFILIATED_PARTIES = [
     'DNL',
     'D/WF/IDP Combined Parties',
     'D/IND',
-    'WF'
+    'WF',
+    'DEM/IP/PRO/WF'
 ]
 
 GOP_AFFILIATED_PARTIES = [
@@ -84,13 +85,13 @@ class ElectionCandidate(models.Model):
     #     return string
 
     @classmethod
-    def winners_by_office_party_year(cls, office, party, year=2012):
+    def winners_by_office_party_year(cls, office, party, year):
         affiliated_parties = DEM_AFFILIATED_PARTIES
         if party == 'gop':
             affiliated_parties = GOP_AFFILIATED_PARTIES
 
         senate_winners = ElectionCandidate.objects.filter(
-            election__office=office, winner=True)
+            election__office=office, election__year=year, winner=True)
         senate_winners = senate_winners.filter(
             party__name__in=affiliated_parties)
 
